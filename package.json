@@ -6,10 +6,13 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n fe,be -c blue,green \"npm run dev -w frontend\" \"npm run dev -w backend\"",
+    "dev:kill-ports": "kill-port 3000 4000",
+    "dev": "npm run dev:kill-ports && concurrently -n fe,be -c blue,green \"npm run dev -w frontend\" \"npm run dev -w backend\"",
     "dev:all": "docker compose up postgres redis -d --wait && npm run dev:all:db && npm run dev:all:app",
+    "docker:stack": "docker compose up --build -d --wait",
+    "docker:stack:fresh": "docker compose down -v && docker compose up --build -d --wait",
     "dev:all:db": "env-cmd -f apps/backend/docker.local.env npm run db:prepare -w backend && env-cmd -f apps/backend/docker.local.env npm run db:seed -w backend",
-    "dev:all:app": "env-cmd -f apps/backend/docker.local.env npm run dev",
+    "dev:all:app": "npm run dev:kill-ports && env-cmd -f apps/backend/docker.local.env npm run dev",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "db:seed": "npm run db:seed -w backend",
@@ -30,7 +33,8 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
-    "env-cmd": "^10.1.0"
+    "env-cmd": "^10.1.0",
+    "kill-port": "^2.0.1"
   },
   "engines": {
     "node": ">=20"
