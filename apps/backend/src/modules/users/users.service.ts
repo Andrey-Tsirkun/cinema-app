@@ -38,4 +38,44 @@ export class UsersService {
   async findByIdPublic(id: string): Promise<UserPublic | null> {
     return this.usersRepository.findByIdPublic(id);
   }
+
+  /**
+   * OAuth sign-in: returns existing linked user or creates / links by verified email.
+   */
+  async findOrCreateOAuthUser(params: {
+    provider: string;
+    subject: string;
+    email: string;
+  }): Promise<UserPublic> {
+    const email = params.email.toLowerCase();
+
+    const byOAuth = await this.usersRepository.findPublicByOAuth(params.provider, params.subject);
+    if (byOAuth) {
+      return byOAuth;
+    }
+
+    const existing = await this.usersRepository.findByEmail(email);
+    if (existing) {
+      if (existing.oauthSubject && existing.oauthSubject !== params.subject) {
+        throw new ConflictException('Email is linked to another OAuth account');
+      }
+      if (existing.oauthProvider && existing.oauthProvider !== params.provider) {
+        throw new ConflictException('Email is linked to another sign-in method');
+      }
+      if (!existing.oauthSubject) {
+        return this.usersRepository.linkOAuthAccount(existing.id, params.provider, params.subject);
+      }
+      const linked = await this.usersRepository.findPublicByOAuth(params.provider, params.subject);
+      if (linked) {
+        return linked;
+      }
+      const fallback = await this.usersRepository.findByIdPublic(existing.id);
+      if (!fallback) {
+        throw new NotFoundException('User not found');
+      }
+      return fallback;
+    }
+
+    return this.usersRepository.createOAuthUser(email, params.provider, params.subject);
+  }
 }
