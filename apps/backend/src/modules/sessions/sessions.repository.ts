@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, ReservationStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { activeBookedWhere } from '../reservations/reservations.repository';
 
 export type SeatAvailabilityStatus = 'AVAILABLE' | 'BOOKED';
 
@@ -85,6 +86,7 @@ export class SessionsRepository {
       return null;
     }
 
+    const now = new Date();
     const [seats, bookedRows] = await Promise.all([
       this.prisma.seat.findMany({
         where: { hallId: sessionRow.hallId },
@@ -94,7 +96,7 @@ export class SessionsRepository {
       this.prisma.reservation.findMany({
         where: {
           sessionId,
-          status: ReservationStatus.BOOKED,
+          ...activeBookedWhere(now),
         },
         select: { seatId: true },
       }),

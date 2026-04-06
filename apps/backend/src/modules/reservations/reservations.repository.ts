@@ -9,6 +9,7 @@ export const reservationPublicSelect = {
   seatId: true,
   status: true,
   createdAt: true,
+  expiresAt: true,
   session: {
     select: {
       id: true,
@@ -26,6 +27,14 @@ export const reservationPublicSelect = {
 export type ReservationPublic = Prisma.ReservationGetPayload<{
   select: typeof reservationPublicSelect;
 }>;
+
+/** BOOKED rows that still block the seat (hold not expired, or confirmed with no expiry). */
+export function activeBookedWhere(now: Date): Prisma.ReservationWhereInput {
+  return {
+    status: ReservationStatus.BOOKED,
+    OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+  };
+}
 
 @Injectable()
 export class ReservationsRepository {
@@ -46,15 +55,39 @@ export class ReservationsRepository {
   }
 
   /**
-   * Remove prior CANCELLED rows for this session+seat so a new BOOKED row can be inserted
-   * under @@unique([sessionId, seatId]).
+   * Cancel BOOKED rows whose hold has passed (server-side cleanup).
+   */
+  async cancelExpiredBookings(): Promise<number> {
+    const result = await this.prisma.reservation.updateMany({
+      where: {
+        status: ReservationStatus.BOOKED,
+        expiresAt: { not: null, lt: new Date() },
+      },
+      data: { status: ReservationStatus.CANCELLED },
+    });
+    return result.count;
+  }
+
+  /**
+   * Remove prior CANCELLED rows and expired BOOKED holds for this session+seat, then create a new hold.
    */
   async createBooked(
     userId: string,
     sessionId: string,
     seatId: string,
+    expiresAt: Date,
   ): Promise<ReservationPublic> {
+    const now = new Date();
     return this.prisma.$transaction(async (tx) => {
+      await tx.reservation.updateMany({
+        where: {
+          sessionId,
+          seatId,
+          status: ReservationStatus.BOOKED,
+          expiresAt: { not: null, lt: now },
+        },
+        data: { status: ReservationStatus.CANCELLED },
+      });
       await tx.reservation.deleteMany({
         where: {
           sessionId,
@@ -68,6 +101,7 @@ export class ReservationsRepository {
           sessionId,
           seatId,
           status: ReservationStatus.BOOKED,
+          expiresAt,
         },
         select: reservationPublicSelect,
       });
@@ -82,7 +116,10 @@ export class ReservationsRepository {
     });
   }
 
-  findOwned(userId: string, reservationId: string): Promise<{ id: string; status: ReservationStatus } | null> {
+  findOwned(
+    userId: string,
+    reservationId: string,
+  ): Promise<{ id: string; status: ReservationStatus } | null> {
     return this.prisma.reservation.findFirst({
       where: { id: reservationId, userId },
       select: { id: true, status: true },
@@ -93,6 +130,34 @@ export class ReservationsRepository {
     await this.prisma.reservation.update({
       where: { id },
       data: { status: ReservationStatus.CANCELLED },
+    });
+  }
+
+  async confirmHold(userId: string, reservationId: string): Promise<ReservationPublic | null> {
+    const existing = await this.prisma.reservation.findFirst({
+      where: {
+        id: reservationId,
+        userId,
+        status: ReservationStatus.BOOKED,
+      },
+      select: { id: true, expiresAt: true },
+    });
+    if (!existing) {
+      return null;
+    }
+    if (existing.expiresAt === null) {
+      return this.prisma.reservation.findUnique({
+        where: { id: reservationId },
+        select: reservationPublicSelect,
+      });
+    }
+    if (existing.expiresAt <= new Date()) {
+      return null;
+    }
+    return this.prisma.reservation.update({
+      where: { id: reservationId },
+      data: { expiresAt: null },
+      select: reservationPublicSelect,
     });
   }
 }

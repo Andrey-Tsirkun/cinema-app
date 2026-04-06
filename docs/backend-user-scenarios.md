@@ -90,8 +90,10 @@ Body:
 }
 ```
 
-Success: reservation object (including related `session`, `seat`, `status`).  
+Success: reservation object (including related `session`, `seat`, `status`, and **`expiresAt`** — end of the hold window, default **5 minutes** after creation).  
 Typical errors (short list): seat not in the session’s hall (`400`), seat already taken (`409 Conflict`), not authenticated (`401`), too many requests (`429`).
+
+Hold length: override with env `RESERVATION_HOLD_MS` (milliseconds, minimum sensible value enforced in code).
 
 ### 3.3. List my reservations
 
@@ -102,18 +104,18 @@ Typical errors (short list): seat not in the session’s hall (`400`), seat alre
 `DELETE {API}/reservations/{reservationId}` (with session), response `204`.  
 You may cancel **only your own** active booking (`BOOKED`); status becomes `CANCELLED`, and the seat can show as `AVAILABLE` again on the next `GET .../sessions/{sessionId}/seats`.
 
-### 3.5. “Release after 5 minutes” scenario
+### 3.5. Hold expiry and confirming a booking
 
-**ARCHITECTURE.md** lists a seat hold timer as a **possible enhancement**; the current backend has **no** “temporary hold until …” field and **no** background job that auto-releases a seat after 5 minutes.
+New reservations are **time-limited holds**: `expiresAt` is set (default **5 minutes** from `POST /reservations`). When the hold passes:
 
-What you can do today:
+- A **cron job** (every minute) sets the reservation to `CANCELLED`.
+- `GET {API}/sessions/{sessionId}/seats` treats expired holds as **not** blocking the seat (same rule at read time, so the map updates even before the cron runs).
 
-| Approach | Description |
-|----------|-------------|
-| **Client timer** | After a successful `POST /reservations`, the frontend calls `DELETE /reservations/{id}` after 5 minutes if the user did not confirm payment, etc. Downside: closing the tab stops the timer. |
-| **Future API extension** | Separate hold type / `expiresAt`, worker or cron flipping to `CANCELLED` when time is up — requires schema and code changes. |
+To **keep the seat** (e.g. after payment), remove the deadline:
 
-So **auto-release after 5 minutes** is described here as a **product scenario**; today only **explicit** release via `DELETE` is available, unless you extend the backend for server-side expiry.
+`POST {API}/reservations/{reservationId}/confirm` (with session) — clears `expiresAt`; the booking stays `BOOKED` until manual `DELETE` or admin flow.
+
+You can still **`DELETE /reservations/{id}`** at any time to cancel an active hold or confirmed booking.
 
 ---
 
@@ -124,8 +126,9 @@ So **auto-release after 5 minutes** is described here as a **product scenario**;
 3. `GET /halls` — pick a hall.  
 4. `GET /sessions?date=...&hallId=...` — pick movie and time → `sessionId`.  
 5. `GET /sessions/{sessionId}/seats` — show `AVAILABLE` / `BOOKED`.  
-6. `POST /reservations` — book.  
-7. If needed: `DELETE /reservations/{id}` — cancel (including a client-side timer until server-side hold exists).
+6. `POST /reservations` — book (returns `expiresAt` hold deadline).  
+7. Optional: `POST /reservations/{id}/confirm` — turn hold into a non-expiring booking.  
+8. If needed: `DELETE /reservations/{id}` — cancel; if the hold is not confirmed, the server also auto-cancels after `expiresAt`.
 
 ---
 

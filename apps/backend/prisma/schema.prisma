@@ -78,6 +78,8 @@ model Reservation {
   seatId    String
   status    ReservationStatus @default(BOOKED)
   createdAt DateTime          @default(now())
+  /// When set, the hold auto-expires at this time unless confirmed (expiresAt cleared).
+  expiresAt DateTime?
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -86,4 +88,5 @@ model Reservation {
   @@unique([sessionId, seatId])
   @@index([userId])
   @@index([sessionId])
+  @@index([status, expiresAt])
 }

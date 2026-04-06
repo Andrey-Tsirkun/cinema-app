@@ -37,6 +37,17 @@ export class ReservationsController {
     return this.reservationsService.findMy(user.id);
   }
 
+  @Post(':id/confirm')
+  @UseGuards(ThrottlerGuard, AuthenticatedGuard)
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  confirm(
+    @Req() req: Request,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ReservationPublic> {
+    const user = req.user as UserPublic;
+    return this.reservationsService.confirm(user.id, id);
+  }
+
   @Delete(':id')
   @UseGuards(AuthenticatedGuard)
   @HttpCode(HttpStatus.NO_CONTENT)

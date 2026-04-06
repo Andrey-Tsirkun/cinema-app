@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, ReservationStatus } from '@prisma/client';
 import { CreateReservationDto } from './dto/create-reservation.dto';
+import { getReservationHoldDurationMs } from './reservation.constants';
 import { ReservationPublic, ReservationsRepository } from './reservations.repository';
 
 export type { ReservationPublic };
@@ -28,8 +29,16 @@ export class ReservationsService {
       throw new BadRequestException('Seat does not belong to the hall for this session');
     }
 
+    const holdMs = getReservationHoldDurationMs();
+    const expiresAt = new Date(Date.now() + holdMs);
+
     try {
-      return await this.reservationsRepository.createBooked(userId, dto.sessionId, dto.seatId);
+      return await this.reservationsRepository.createBooked(
+        userId,
+        dto.sessionId,
+        dto.seatId,
+        expiresAt,
+      );
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
         throw new ConflictException('This seat is already booked for this session');
@@ -40,6 +49,14 @@ export class ReservationsService {
 
   findMy(userId: string): Promise<ReservationPublic[]> {
     return this.reservationsRepository.findManyForUser(userId);
+  }
+
+  async confirm(userId: string, reservationId: string): Promise<ReservationPublic> {
+    const updated = await this.reservationsRepository.confirmHold(userId, reservationId);
+    if (!updated) {
+      throw new NotFoundException('Reservation not found or hold has expired');
+    }
+    return updated;
   }
 
   async cancel(userId: string, reservationId: string): Promise<void> {
