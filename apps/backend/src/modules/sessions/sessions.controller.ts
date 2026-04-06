@@ -1,6 +1,10 @@
 import { Controller, Get, Param, ParseUUIDPipe, Query, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ListSessionsQueryDto } from './dto/list-sessions-query.dto';
-import { SessionPublic, SessionsService } from './sessions.service';
+import {
+  SessionPublic,
+  SessionSeatWithAvailability,
+  SessionsService,
+} from './sessions.service';
 
 @Controller('sessions')
 export class SessionsController {
@@ -16,6 +20,13 @@ export class SessionsController {
   )
   findAll(@Query() query: ListSessionsQueryDto): Promise<SessionPublic[]> {
     return this.sessionsService.findAll(query);
+  }
+
+  @Get(':id/seats')
+  findSessionSeats(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<SessionSeatWithAvailability[]> {
+    return this.sessionsService.findSeatsWithAvailability(id);
   }
 
   @Get(':id')

@@ -1,7 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, ReservationStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
+export type SeatAvailabilityStatus = 'AVAILABLE' | 'BOOKED';
+
+export type SessionSeatWithAvailability = {
+  id: string;
+  hallId: string;
+  row: number;
+  number: number;
+  status: SeatAvailabilityStatus;
+};
 export const sessionPublicSelect = {
   id: true,
   movieId: true,
@@ -60,5 +69,44 @@ export class SessionsRepository {
       where: { id },
       select: sessionPublicSelect,
     });
+  }
+
+  /**
+   * Seat map for a session: all seats in the session hall with BOOKED vs AVAILABLE (ARCHITECTURE §9).
+   */
+  async findSeatAvailabilityForSession(
+    sessionId: string,
+  ): Promise<SessionSeatWithAvailability[] | null> {
+    const sessionRow = await this.prisma.session.findUnique({
+      where: { id: sessionId },
+      select: { hallId: true },
+    });
+    if (!sessionRow) {
+      return null;
+    }
+
+    const [seats, bookedRows] = await Promise.all([
+      this.prisma.seat.findMany({
+        where: { hallId: sessionRow.hallId },
+        select: { id: true, hallId: true, row: true, number: true },
+        orderBy: [{ row: 'asc' }, { number: 'asc' }],
+      }),
+      this.prisma.reservation.findMany({
+        where: {
+          sessionId,
+          status: ReservationStatus.BOOKED,
+        },
+        select: { seatId: true },
+      }),
+    ]);
+
+    const booked = new Set(bookedRows.map((r) => r.seatId));
+    return seats.map((s) => ({
+      id: s.id,
+      hallId: s.hallId,
+      row: s.row,
+      number: s.number,
+      status: booked.has(s.id) ? ('BOOKED' as const) : ('AVAILABLE' as const),
+    }));
   }
 }

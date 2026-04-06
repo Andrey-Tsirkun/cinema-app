@@ -2,36 +2,35 @@ import 'dotenv/config';
 import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import helmet from 'helmet';
 import * as passport from 'passport';
-import session from 'express-session';
 import { AppModule } from './app.module';
+import { createSessionMiddleware } from './session.middleware';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
+
+  if (process.env.TRUST_PROXY === 'true') {
+    app.set('trust proxy', 1);
+  }
+
+  app.useBodyParser('json', { limit: '100kb' });
+  app.useBodyParser('urlencoded', { extended: true, limit: '100kb' });
 
   app.enableCors({
     origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:3000',
     credentials: true,
   });
 
-  const sessionSecret = process.env.SESSION_SECRET;
-  if (!sessionSecret) {
-    throw new Error('SESSION_SECRET is not set');
-  }
-
-  app.use(
-    session({
-      secret: sessionSecret,
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24 * 7,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      },
-    }),
-  );
+  app.use(await createSessionMiddleware());
   app.use(passport.initialize());
   app.use(passport.session());
 
@@ -42,6 +41,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
   const port = process.env.PORT ? Number(process.env.PORT) : 4000;
   await app.listen(port, '0.0.0.0');
 }

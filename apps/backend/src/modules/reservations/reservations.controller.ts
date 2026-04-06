@@ -12,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { UserPublic } from '../users/users.service';
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard';
 import { CreateReservationDto } from './dto/create-reservation.dto';
@@ -22,7 +23,8 @@ export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
   @Post()
-  @UseGuards(AuthenticatedGuard)
+  @UseGuards(ThrottlerGuard, AuthenticatedGuard)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   create(@Req() req: Request, @Body() dto: CreateReservationDto): Promise<ReservationPublic> {
     const user = req.user as UserPublic;
     return this.reservationsService.create(user.id, dto);

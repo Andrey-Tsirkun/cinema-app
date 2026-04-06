@@ -1,8 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ListSessionsQueryDto } from './dto/list-sessions-query.dto';
-import { SessionPublic, SessionsRepository } from './sessions.repository';
+import {
+  SessionPublic,
+  SessionSeatWithAvailability,
+  SessionsRepository,
+} from './sessions.repository';
 
-export type { SessionPublic };
+export type { SessionPublic, SessionSeatWithAvailability };
 
 @Injectable()
 export class SessionsService {
@@ -21,5 +25,13 @@ export class SessionsService {
       throw new NotFoundException('Session not found');
     }
     return session;
+  }
+
+  async findSeatsWithAvailability(sessionId: string): Promise<SessionSeatWithAvailability[]> {
+    const rows = await this.sessionsRepository.findSeatAvailabilityForSession(sessionId);
+    if (!rows) {
+      throw new NotFoundException('Session not found');
+    }
+    return rows;
   }
 }
