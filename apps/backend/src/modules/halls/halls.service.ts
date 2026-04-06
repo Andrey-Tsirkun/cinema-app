@@ -1,25 +1,22 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import {
-  HallPublic,
-  HallsRepository,
-  SeatPublic,
-} from './halls.repository';
+import { Injectable } from '@nestjs/common';
+import { SeatsService } from '../seats/seats.service';
+import { HallPublic, HallsRepository } from './halls.repository';
+import type { SeatPublic } from '../seats/seats.service';
 
-export type { HallPublic, SeatPublic };
+export type { HallPublic };
 
 @Injectable()
 export class HallsService {
-  constructor(private readonly hallsRepository: HallsRepository) {}
+  constructor(
+    private readonly hallsRepository: HallsRepository,
+    private readonly seatsService: SeatsService,
+  ) {}
 
   findAll(): Promise<HallPublic[]> {
     return this.hallsRepository.findAll();
   }
 
-  async findSeats(hallId: string): Promise<SeatPublic[]> {
-    const exists = await this.hallsRepository.hallExists(hallId);
-    if (!exists) {
-      throw new NotFoundException('Hall not found');
-    }
-    return this.hallsRepository.findSeatsByHallId(hallId);
+  findSeats(hallId: string): Promise<SeatPublic[]> {
+    return this.seatsService.findByHallId(hallId);
   }
 }

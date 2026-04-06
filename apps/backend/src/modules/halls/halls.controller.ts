@@ -1,6 +1,6 @@
 import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
-import { HallPublic, HallsService, SeatPublic } from './halls.service';
-
+import type { SeatPublic } from '../seats/seats.service';
+import { HallPublic, HallsService } from './halls.service';
 @Controller('halls')
 export class HallsController {
   constructor(private readonly hallsService: HallsService) {}
