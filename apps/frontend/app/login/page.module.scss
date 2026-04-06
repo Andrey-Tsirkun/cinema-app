@@ -1,0 +1,350 @@
+// Design tokens — "The Cinematic Pulse" (references/login)
+$surface: #0f0d16;
+$on-surface: #eae2fa;
+$on-surface-variant: #aea8be;
+$primary: #a68cff;
+$primary-container: #7c4dff;
+$outline-variant: #4a4558;
+$secondary: #00daf3;
+$tertiary: #ffb1c1;
+$surface-container: #1b1825;
+$radius-xl: 1.5rem;
+$radius-lg: 1rem;
+
+@mixin focus-ring {
+  outline: 2px solid $primary;
+  outline-offset: 2px;
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: $on-surface;
+  background-color: $surface;
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    rgba(124, 77, 255, 0.12) 0%,
+    $surface 72%
+  );
+  background-size: cover;
+  background-position: center;
+  font-family: var(--font-login-body), system-ui, sans-serif;
+}
+
+.skipLink {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  background: $surface-container;
+  color: $on-surface;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+
+  &:focus {
+    clip-path: none;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    @include focus-ring;
+  }
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: rgba(15, 13, 22, 0.72);
+  backdrop-filter: blur(20px);
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 96rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem;
+
+  @media (min-width: 768px) {
+    padding: 1.5rem 3rem;
+  }
+}
+
+.brandLink {
+  font-family: var(--font-login-display), system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+  background: linear-gradient(90deg, $primary, $primary-container);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: $primary;
+
+  &:focus-visible {
+    @include focus-ring;
+    border-radius: 0.25rem;
+  }
+}
+
+.navLinks {
+  display: none;
+  gap: 2rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  @media (min-width: 768px) {
+    display: flex;
+  }
+}
+
+.navLink {
+  color: $on-surface;
+  text-decoration: none;
+  font-weight: 500;
+  opacity: 0.85;
+
+  &:hover {
+    color: $primary;
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+    border-radius: 0.25rem;
+  }
+}
+
+.main {
+  position: relative;
+  z-index: 10;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6rem 1.5rem 3rem;
+}
+
+.column {
+  width: 100%;
+  max-width: 28rem;
+}
+
+.intro {
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.tagline {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-login-display), system-ui, sans-serif;
+  font-size: clamp(2rem, 6vw, 3rem);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  background: linear-gradient(90deg, $primary, #c8b7ff, $primary-container);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: $primary;
+}
+
+.subtitle {
+  margin: 0;
+  color: $on-surface-variant;
+  font-weight: 500;
+  font-size: 1.125rem;
+  letter-spacing: -0.02em;
+}
+
+.card {
+  width: 100%;
+  padding: 2.5rem;
+  border-radius: $radius-lg;
+  background: rgba(27, 24, 37, 0.65);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(166, 140, 255, 0.12);
+}
+
+.cardHeader {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: $on-surface;
+}
+
+.cardLead {
+  margin: 0;
+  font-size: 0.875rem;
+  color: $on-surface-variant;
+}
+
+.googleLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem 1.5rem;
+  border-radius: $radius-lg;
+  background: #fff;
+  color: $surface;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  box-shadow: 0 10px 25px -8px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  &:hover {
+    transform: scale(1.02);
+    box-shadow:
+      0 10px 25px -8px rgba(0, 0, 0, 0.35),
+      0 0 24px rgba(166, 140, 255, 0.28);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+    outline-color: #fff;
+  }
+}
+
+.googleIcon {
+  flex-shrink: 0;
+}
+
+.legal {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba($outline-variant, 0.15);
+  text-align: center;
+}
+
+.legalText {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: $on-surface-variant;
+  line-height: 1.5;
+}
+
+.inlineLink {
+  color: $primary;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+
+  &:hover {
+    color: #b9a3ff;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+    border-radius: 0.2rem;
+  }
+}
+
+.footer {
+  margin-top: auto;
+  width: 100%;
+  background: $surface;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footerInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  max-width: 96rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 3rem;
+  }
+}
+
+.footerBrand {
+  font-family: var(--font-login-display), system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: $on-surface;
+  letter-spacing: -0.03em;
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.footerLink {
+  color: rgba($on-surface, 0.6);
+  font-size: 0.875rem;
+  text-decoration: none;
+
+  &:hover {
+    color: #fff;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+    border-radius: 0.25rem;
+  }
+}
+
+.copyright {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba($on-surface, 0.4);
+  letter-spacing: -0.02em;
+}
+
+.accentBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, $primary, $secondary, $tertiary);
+  opacity: 0.35;
+  pointer-events: none;
+}
