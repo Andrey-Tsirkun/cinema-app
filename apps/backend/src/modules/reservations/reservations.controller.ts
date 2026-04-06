@@ -14,7 +14,7 @@ import {
 import type { Request } from 'express';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { UserPublic } from '../users/users.service';
-import { AuthenticatedGuard } from '../auth/guards/authenticated.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { ReservationPublic, ReservationsService } from './reservations.service';
 
@@ -23,7 +23,7 @@ export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
   @Post()
-  @UseGuards(ThrottlerGuard, AuthenticatedGuard)
+  @UseGuards(ThrottlerGuard, JwtAuthGuard)
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   create(@Req() req: Request, @Body() dto: CreateReservationDto): Promise<ReservationPublic> {
     const user = req.user as UserPublic;
@@ -31,14 +31,14 @@ export class ReservationsController {
   }
 
   @Get('my')
-  @UseGuards(AuthenticatedGuard)
+  @UseGuards(JwtAuthGuard)
   findMy(@Req() req: Request): Promise<ReservationPublic[]> {
     const user = req.user as UserPublic;
     return this.reservationsService.findMy(user.id);
   }
 
   @Post(':id/confirm')
-  @UseGuards(ThrottlerGuard, AuthenticatedGuard)
+  @UseGuards(ThrottlerGuard, JwtAuthGuard)
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
   confirm(
     @Req() req: Request,
@@ -49,7 +49,7 @@ export class ReservationsController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthenticatedGuard)
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async cancel(
     @Req() req: Request,

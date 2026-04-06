@@ -4,9 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
-import * as passport from 'passport';
 import { AppModule } from './app.module';
-import { createSessionMiddleware } from './session.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -29,8 +27,6 @@ async function bootstrap() {
     origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:3000',
     credentials: true,
   });
-
-  app.use(await createSessionMiddleware());
 
   app.useGlobalPipes(
     new ValidationPipe({

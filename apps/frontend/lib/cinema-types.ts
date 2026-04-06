@@ -1,3 +1,14 @@
+export type UserPublic = {
+  id: string;
+  email: string;
+  createdAt: string;
+};
+
+export type AuthSuccessResponse = {
+  accessToken: string;
+  user: UserPublic;
+};
+
 export type HallPublic = {
   id: string;
   name: string;

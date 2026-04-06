@@ -1,16 +1,29 @@
 import { Module } from '@nestjs/common';
+import { JwtModule, type JwtSignOptions } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { PassportModule } from '@nestjs/passport';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
-import { AuthenticatedGuard } from './guards/authenticated.guard';
-import { SessionSerializer } from './session.serializer';
-import { GoogleStrategy } from './strategies/google.strategy';
+import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Module({
-  imports: [ThrottlerModule, UsersModule, PassportModule.register({ session: true })],
+  imports: [
+    ThrottlerModule,
+    UsersModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (config: ConfigService) => ({
+        secret: config.getOrThrow<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: (config.get<string>('JWT_EXPIRES_IN') ?? '7d') as JwtSignOptions['expiresIn'],
+        },
+      }),
+      inject: [ConfigService],
+    }),
+  ],
   controllers: [AuthController],
-  providers: [GoogleStrategy, SessionSerializer, AuthenticatedGuard],
-  exports: [AuthenticatedGuard],
+  providers: [AuthService, JwtAuthGuard],
+  exports: [JwtAuthGuard, JwtModule],
 })
 export class AuthModule {}

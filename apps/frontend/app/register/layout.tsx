@@ -1,7 +1,7 @@
 import { Manrope, Space_Grotesk } from 'next/font/google';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import styles from './login-font-root.module.scss';
+import styles from '../login/login-font-root.module.scss';
 
 const manrope = Manrope({
   subsets: ['latin', 'cyrillic'],
@@ -16,11 +16,11 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'Sign in',
-  description: 'Sign in with email to manage bookings and rewards',
+  title: 'Register',
+  description: 'Create an account to book cinema seats and manage reservations',
 };
 
-export default function LoginLayout({ children }: { children: ReactNode }) {
+export default function RegisterLayout({ children }: { children: ReactNode }) {
   return (
     <div className={`${manrope.variable} ${spaceGrotesk.variable} ${styles.fontRoot}`}>
       {children}

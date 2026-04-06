@@ -1,39 +1,43 @@
 # User scenarios (backend API)
 
-This document describes typical flows against the `apps/backend` REST API and the corresponding HTTP requests. The API base URL is written as `{API}` (e.g. `http://localhost:4000`). Session-backed calls require **cookies** (`credentials: 'include'` in the browser).
+This document describes typical flows against the `apps/backend` REST API and the corresponding HTTP requests. The API base URL is written as `{API}` (e.g. `http://localhost:4000`). Authenticated calls use a **JWT access token** in the header: `Authorization: Bearer <token>`.
 
 ---
 
 ## 1. Sign-up and sign-in
 
-The current implementation **does not** expose separate `POST /auth/register` and `POST /auth/login` with email/password. A user row is created or looked up in the database on the first successful **Google OAuth** sign-in; after that, the app relies on a **server-side session** (cookie).
+Registration and login use **email and password**. Passwords are stored hashed (bcrypt). Responses include a short-lived **access token** (TTL from `JWT_EXPIRES_IN`, default `7d`) and the public user profile.
 
-### 1.1. First sign-in and implicit registration
+### 1.1. Register
 
-1. The client redirects the user to  
-   `GET {API}/auth/google`
-2. The user completes authorization with Google.
-3. The browser is sent to  
-   `GET {API}/auth/google/callback`  
-   On success, the server sets a **session cookie** and redirects to the URL from `OAUTH_SUCCESS_REDIRECT_URL` (typically the frontend, e.g. `http://localhost:3000`).
+1. `POST {API}/auth/register`  
+   Body: `{ "email": "user@example.com", "password": "<min 8 chars>" }`  
+   Success: `{ "accessToken": "<jwt>", "user": { "id", "email", "createdAt" } }`.  
+   Conflict if email exists: `409`.
 
-From a product perspective: **first visit** = implicit registration (user record with Google email and OAuth linkage); **return visit** = same flow, user already exists in the DB.
+### 1.2. Login
 
-### 1.2. Check that the user is signed in
+1. `POST {API}/auth/login`  
+   Body: `{ "email": "...", "password": "..." }`  
+   Success: same shape as register.  
+   Invalid credentials: `401`.
+
+### 1.3. Check that the user is signed in
 
 - `GET {API}/auth/me`  
-  Requires an active session. Response: `{ id, email, createdAt }`.  
-  Without a session: `401 Unauthorized`.
+  Header: `Authorization: Bearer <accessToken>`.  
+  Response: `{ id, email, createdAt }`.  
+  Missing or invalid token: `401 Unauthorized`.
 
-### 1.3. Sign out
+### 1.4. Sign out
 
 - `POST {API}/auth/logout`  
-  Requires a session. Terminates the session on the server.
+  Stateless JWT: server returns `{ "ok": true }`. The client should **discard** the stored access token.
 
-### 1.4. Client notes
+### 1.5. Client notes
 
-- CORS is configured with `credentials: true`; the origin must match `FRONTEND_ORIGIN` (or your production frontend origin).
-- OAuth routes are subject to **rate limiting** (see backend code).
+- CORS allows the frontend origin (`FRONTEND_ORIGIN`). Bearer tokens do not require `credentials: 'include'`.
+- Auth routes are subject to **rate limiting** (see backend code).
 
 ---
 
@@ -72,14 +76,14 @@ This endpoint matches “available seats in the hall for the chosen screening”
 
 ### 3.1. Preconditions
 
-- The user **must be signed in** (session after OAuth).
+- The user **must be authenticated** (valid `Authorization: Bearer` token).
 - Request body: `sessionId` and a `seatId` that was `AVAILABLE` on the client (the server re-validates hall and uniqueness).
 
 ### 3.2. Create a reservation
 
 `POST {API}/reservations`  
 
-Headers: session cookie, `Content-Type: application/json`  
+Headers: `Authorization: Bearer <accessToken>`, `Content-Type: application/json`  
 
 Body:
 
@@ -97,11 +101,11 @@ Hold length: override with env `RESERVATION_HOLD_MS` (milliseconds, minimum sens
 
 ### 3.3. List my reservations
 
-`GET {API}/reservations/my` (with session).
+`GET {API}/reservations/my` with `Authorization: Bearer <accessToken>`.
 
 ### 3.4. Cancel a reservation
 
-`DELETE {API}/reservations/{reservationId}` (with session), response `204`.  
+`DELETE {API}/reservations/{reservationId}` (with bearer token), response `204`.  
 You may cancel **only your own** active booking (`BOOKED`); status becomes `CANCELLED`, and the seat can show as `AVAILABLE` again on the next `GET .../sessions/{sessionId}/seats`.
 
 ### 3.5. Hold expiry and confirming a booking
@@ -113,7 +117,7 @@ New reservations are **time-limited holds**: `expiresAt` is set (default **5 min
 
 To **keep the seat** (e.g. after payment), remove the deadline:
 
-`POST {API}/reservations/{reservationId}/confirm` (with session) — clears `expiresAt`; the booking stays `BOOKED` until manual `DELETE` or admin flow.
+`POST {API}/reservations/{reservationId}/confirm` (with bearer token) — clears `expiresAt`; the booking stays `BOOKED` until manual `DELETE` or admin flow.
 
 You can still **`DELETE /reservations/{id}`** at any time to cancel an active hold or confirmed booking.
 
@@ -121,8 +125,8 @@ You can still **`DELETE /reservations/{id}`** at any time to cancel an active ho
 
 ## Short flow: sign-in → seat
 
-1. `GET /auth/google` → callback → session.  
-2. `GET /auth/me` — confirm the user is present.  
+1. `POST /auth/register` or `POST /auth/login` → store `accessToken`.  
+2. `GET /auth/me` with `Authorization: Bearer` — confirm the user.  
 3. `GET /halls` — pick a hall.  
 4. `GET /sessions?date=...&hallId=...` — pick movie and time → `sessionId`.  
 5. `GET /sessions/{sessionId}/seats` — show `AVAILABLE` / `BOOKED`.  
@@ -134,5 +138,5 @@ You can still **`DELETE /reservations/{id}`** at any time to cancel an active ho
 
 ## See also
 
-- `ARCHITECTURE.md` — target architecture and REST tables (auth paths in the doc may differ from the OAuth implementation).
-- `apps/backend/env.example` — environment variables for OAuth, Redis, CORS, and sessions.
+- `ARCHITECTURE.md` — target architecture and REST tables (auth details may vary).
+- `apps/backend/env.example` — environment variables for JWT, CORS, and database.

@@ -1,46 +1,38 @@
-import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { AuthGuard } from '@nestjs/passport';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import type { Request, Response } from 'express';
+import type { Request } from 'express';
 import type { UserPublic } from '../users/users.repository';
-import { AuthenticatedGuard } from './guards/authenticated.guard';
+import { CreateUserDto } from '../users/dto/create-user.dto';
+import { AuthService } from './auth.service';
+import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly authService: AuthService) {}
 
-  @Get('google')
-  @UseGuards(ThrottlerGuard, AuthGuard('google'))
-  @Throttle({ default: { limit: 20, ttl: 900_000 } })
-  googleAuth(): void {
-    // Redirect handled by Passport
+  @Post('register')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  register(@Body() dto: CreateUserDto) {
+    return this.authService.register(dto);
   }
 
-  @Get('google/callback')
-  @UseGuards(ThrottlerGuard, AuthGuard('google'))
-  @Throttle({ default: { limit: 60, ttl: 900_000 } })
-  googleCallback(@Req() _req: Request, @Res() res: Response): void {
-    const redirectUrl =
-      this.configService.get<string>('OAUTH_SUCCESS_REDIRECT_URL') ?? 'http://localhost:3000';
-    res.redirect(redirectUrl);
+  @Post('login')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
   }
 
   @Get('me')
-  @UseGuards(AuthenticatedGuard)
+  @UseGuards(JwtAuthGuard)
   me(@Req() req: Request): UserPublic {
     return req.user as UserPublic;
   }
 
   @Post('logout')
-  @UseGuards(AuthenticatedGuard)
-  async logout(@Req() req: Request): Promise<{ ok: true }> {
-    await new Promise<void>((resolve, reject) => {
-      req.logout((err) => (err ? reject(err) : resolve()));
-    });
-    await new Promise<void>((resolve, reject) => {
-      req.session.destroy((err) => (err ? reject(err) : resolve()));
-    });
+  logout(): { ok: true } {
     return { ok: true };
   }
 }

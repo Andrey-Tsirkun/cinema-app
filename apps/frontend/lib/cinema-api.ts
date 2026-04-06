@@ -4,6 +4,7 @@ import type {
   SessionPublic,
   SessionSeatWithAvailability,
 } from './cinema-types';
+import { useAuthStore } from './auth-store';
 
 export function getApiBaseUrl(): string {
   return (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/$/, '');
@@ -45,6 +46,13 @@ function messageFromBody(body: unknown, fallback: string): string {
   return fallback;
 }
 
+function mergeAuthHeaders(headers: Headers): void {
+  const token = useAuthStore.getState().accessToken;
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+}
+
 export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   const method = (init?.method ?? 'GET').toUpperCase();
@@ -53,10 +61,10 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
       headers.set('Content-Type', 'application/json');
     }
   }
+  mergeAuthHeaders(headers);
 
   const res = await fetch(buildUrl(path), {
     ...init,
-    credentials: 'include',
     headers,
   });
 

@@ -186,48 +186,104 @@
   color: $on-surface-variant;
 }
 
-.googleLink {
+.authForm {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fieldLabel {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: $on-surface-variant;
+  letter-spacing: 0.02em;
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+}
+
+.fieldInput {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba($outline-variant, 0.35);
+  background: rgba($surface, 0.55);
+  color: $on-surface;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &::placeholder {
+    color: rgba($on-surface-variant, 0.7);
+  }
+
+  &:focus-visible {
+    border-color: $primary;
+    box-shadow: 0 0 0 3px rgba($primary, 0.2);
+  }
+}
+
+.fieldHint {
+  margin: 0.125rem 0 0;
+  font-size: 0.75rem;
+  color: rgba($on-surface-variant, 0.85);
+}
+
+.fieldError {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: $error;
+}
+
+.submitButton {
+  margin-top: 1.25rem;
   width: 100%;
   padding: 1rem 1.5rem;
+  border: none;
   border-radius: $radius-lg;
-  background: $white;
-  color: $surface;
+  background: linear-gradient(135deg, $primary, $primary-container);
+  color: $on-primary;
   font-weight: 700;
   font-size: 1rem;
   letter-spacing: -0.02em;
-  text-decoration: none;
-  box-shadow: 0 10px 25px -8px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
   transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease;
+    opacity 0.2s ease;
 
-  @include reduced-motion {
-    transition: none;
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
   }
 
-  &:hover {
-    transform: scale(1.02);
-    box-shadow:
-      0 10px 25px -8px rgba(0, 0, 0, 0.35),
-      0 0 24px rgba(166, 140, 255, 0.28);
+  &:not(:disabled):hover {
+    transform: translateY(-1px);
   }
 
-  &:active {
-    transform: scale(0.98);
+  &:not(:disabled):active {
+    transform: translateY(0);
   }
 
   &:focus-visible {
     @include focus-ring;
-    outline-color: $white;
   }
 }
 
-.googleIcon {
-  flex-shrink: 0;
+.switchAuth {
+  margin: 1.25rem 0 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: $on-surface-variant;
+}
+
+.formFallback {
+  margin: 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: $on-surface-variant;
 }
 
 .legal {
