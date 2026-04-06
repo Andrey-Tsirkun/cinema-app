@@ -1,0 +1,18 @@
+@use 'variables' as *;
+@use 'mixins' as *;
+
+.wrap {
+  min-height: 60vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.5rem;
+  color: $on-surface-variant;
+  font-family: var(--font-sessions-body), system-ui, sans-serif;
+  text-align: center;
+}
+
+.message {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}

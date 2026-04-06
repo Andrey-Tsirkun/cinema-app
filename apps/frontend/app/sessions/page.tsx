@@ -1,5 +1,10 @@
 import { BookingClient } from './BookingClient';
+import { SessionAuthGate } from './SessionAuthGate';
 
 export default function SessionsPage() {
-  return <BookingClient />;
+  return (
+    <SessionAuthGate>
+      <BookingClient />
+    </SessionAuthGate>
+  );
 }
