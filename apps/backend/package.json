@@ -6,8 +6,12 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "start:dev": "nodemon --watch src --ext ts --exec \"ts-node --project tsconfig.json src/main.ts\"",
+    "start:docker": "prisma migrate deploy && prisma db seed && npm run start:dev",
     "lint": "tsc --noEmit -p tsconfig.json",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "db:prepare": "prisma generate && prisma migrate deploy",
+    "db:seed": "prisma db seed"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

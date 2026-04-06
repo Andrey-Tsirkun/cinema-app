@@ -3,6 +3,7 @@ FROM node:22-bookworm-slim
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
+COPY apps/backend/package.json ./apps/backend/
 COPY apps/frontend/package.json ./apps/frontend/
 COPY packages/config/package.json ./packages/config/
 

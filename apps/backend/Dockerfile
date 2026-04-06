@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/
 
 COPY package.json package-lock.json* ./
 COPY apps/backend/package.json ./apps/backend/
+COPY apps/frontend/package.json ./apps/frontend/
 COPY packages/config/package.json ./packages/config/
 
 RUN npm ci
@@ -22,4 +23,4 @@ ENV NODE_ENV=development
 
 EXPOSE 4000
 
-CMD ["npm", "run", "start:dev", "-w", "backend"]
+CMD ["sh", "-c", "npm run start:docker -w backend"]
