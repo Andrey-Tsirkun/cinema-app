@@ -4,5 +4,82 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+}
+
+enum ReservationStatus {
+  BOOKED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String?
+  createdAt DateTime @default(now())
+
+  reservations Reservation[]
+}
+
+model Hall {
+  id          String @id @default(uuid())
+  name        String
+  rowsCount   Int
+  seatsPerRow Int
+
+  seats    Seat[]
+  sessions Session[]
+}
+
+model Seat {
+  id     String @id @default(uuid())
+  hallId String
+  row    Int
+  number Int
+
+  hall          Hall          @relation(fields: [hallId], references: [id], onDelete: Cascade)
+  reservations  Reservation[]
+
+  @@unique([hallId, row, number])
+  @@index([hallId])
+}
+
+model Movie {
+  id          String  @id @default(uuid())
+  title       String
+  duration    Int
+  description String?
+
+  sessions Session[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  movieId   String
+  hallId    String
+  startTime DateTime
+  price     Decimal  @db.Decimal(10, 2)
+
+  movie         Movie         @relation(fields: [movieId], references: [id], onDelete: Restrict)
+  hall          Hall          @relation(fields: [hallId], references: [id], onDelete: Restrict)
+  reservations  Reservation[]
+
+  @@index([hallId, startTime])
+  @@index([movieId])
+}
+
+model Reservation {
+  id        String            @id @default(uuid())
+  userId    String
+  sessionId String
+  seatId    String
+  status    ReservationStatus @default(BOOKED)
+  createdAt DateTime          @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  seat    Seat    @relation(fields: [seatId], references: [id], onDelete: Restrict)
+
+  @@unique([sessionId, seatId])
+  @@index([userId])
+  @@index([sessionId])
 }
