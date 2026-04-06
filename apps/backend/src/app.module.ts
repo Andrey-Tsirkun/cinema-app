@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { HallsModule } from './modules/halls/halls.module';
 import { MoviesModule } from './modules/movies/movies.module';
+import { SessionsModule } from './modules/sessions/sessions.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -13,6 +14,7 @@ import { PrismaModule } from './prisma/prisma.module';
     UsersModule,
     MoviesModule,
     HallsModule,
+    SessionsModule,
     AuthModule,
   ],
   controllers: [],
