@@ -31,8 +31,6 @@ async function bootstrap() {
   });
 
   app.use(await createSessionMiddleware());
-  app.use(passport.initialize());
-  app.use(passport.session());
 
   app.useGlobalPipes(
     new ValidationPipe({

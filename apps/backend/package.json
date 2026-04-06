@@ -5,6 +5,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
+    "dev": "nodemon --watch src --ext ts --exec \"ts-node --project tsconfig.json src/main.ts\"",
     "start:dev": "nodemon --watch src --ext ts --exec \"ts-node --project tsconfig.json src/main.ts\"",
     "start:docker": "prisma migrate deploy && prisma db seed && npm run start:dev",
     "lint": "tsc --noEmit -p tsconfig.json",
