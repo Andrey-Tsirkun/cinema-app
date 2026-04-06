@@ -8,7 +8,20 @@
   "scripts": {
     "dev": "concurrently -n fe,be -c blue,green \"npm run dev -w frontend\" \"npm run dev -w backend\"",
     "build": "npm run build --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present"
+    "lint": "npm run lint --workspaces --if-present",
+    "docker:build": "docker compose build",
+    "docker:build:nocache": "docker compose build --no-cache",
+    "docker:up": "docker compose up",
+    "docker:up:detached": "docker compose up -d",
+    "docker:up:build": "docker compose up --build",
+    "docker:up:build:detached": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:stop": "docker compose stop",
+    "docker:logs": "docker compose logs -f",
+    "docker:ps": "docker compose ps",
+    "docker:clean": "docker compose down -v",
+    "docker:infra:up": "docker compose up postgres redis -d",
+    "docker:infra:down": "docker compose stop postgres redis"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
