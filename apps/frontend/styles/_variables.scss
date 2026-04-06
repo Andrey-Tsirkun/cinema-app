@@ -1,0 +1,42 @@
+// Design tokens
+
+// Surfaces
+$surface: #0f0d16;
+$on-surface: #eae2fa;
+$on-surface-variant: #aea8be;
+$surface-container: #1b1825;
+$surface-container-low: #14121d;
+$surface-container-high: #211d2d;
+$surface-container-highest: #272335;
+$surface-container-lowest: #000000;
+$surface-bright: #2e293d;
+$surface-variant: #272335;
+
+// Brand
+$primary: #a68cff;
+$primary-container: #7c4dff;
+$primary-fixed: #c8b7ff;
+$primary-dim: #7e51ff;
+$on-primary: #25006b;
+$secondary: #00daf3;
+$tertiary: #ffb1c1;
+$outline-variant: #4a4558;
+
+// Feedback & chrome
+$error: #fd6f85;
+$white: #fff;
+$link-hover-primary: #b9a3ff;
+
+// Glass / effects (login card)
+$glass-card-bg: rgba(27, 24, 37, 0.65);
+$glass-card-border: rgba(166, 140, 255, 0.12);
+$hero-radial-mid: rgba(124, 77, 255, 0.12);
+
+// Radii
+$radius-lg: 1rem;
+$radius-xl: 1.5rem;
+
+@mixin focus-ring {
+  outline: 2px solid $primary;
+  outline-offset: 2px;
+}

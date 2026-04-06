@@ -1,0 +1,21 @@
+// Responsive breakpoints (common tablet / desktop cutoffs)
+$bp-md: 768px;
+$bp-lg: 1024px;
+
+@mixin md-up {
+  @media (min-width: $bp-md) {
+    @content;
+  }
+}
+
+@mixin lg-up {
+  @media (min-width: $bp-lg) {
+    @content;
+  }
+}
+
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
