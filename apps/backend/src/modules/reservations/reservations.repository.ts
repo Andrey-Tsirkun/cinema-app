@@ -54,6 +54,18 @@ export class ReservationsRepository {
     });
   }
 
+  /** Active BOOKED reservations (non-expired hold or confirmed) for this user on this session. */
+  countActiveBookingsForUserSession(userId: string, sessionId: string): Promise<number> {
+    const now = new Date();
+    return this.prisma.reservation.count({
+      where: {
+        userId,
+        sessionId,
+        ...activeBookedWhere(now),
+      },
+    });
+  }
+
   /**
    * Cancel BOOKED rows whose hold has passed (server-side cleanup).
    */

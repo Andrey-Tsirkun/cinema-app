@@ -78,6 +78,7 @@ function groupSeatsByRow(seats: SessionSeatWithAvailability[]): Map<number, Sess
 }
 
 const DATE_STRIP_DAYS = 7;
+const MAX_SELECTABLE_SEATS = 5;
 
 export function BookingClient() {
   const movieFieldId = useId();
@@ -102,13 +103,18 @@ export function BookingClient() {
   const [selectedHallId, setSelectedHallId] = useState<string | null>(null);
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
+  const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>([]);
+  const selectedSeatIdsRef = useRef<string[]>([]);
 
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [bannerError, setBannerError] = useState<string | null>(null);
   const [bannerSuccess, setBannerSuccess] = useState<string | null>(null);
 
   const prevMovieIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    selectedSeatIdsRef.current = selectedSeatIds;
+  }, [selectedSeatIds]);
 
   const dateStrip = useMemo(() => {
     const base = new Date();
@@ -140,10 +146,10 @@ export function BookingClient() {
     [sessions, selectedSessionId],
   );
 
-  const selectedSeat = useMemo(
-    () => seats.find((s) => s.id === selectedSeatId) ?? null,
-    [seats, selectedSeatId],
-  );
+  const selectedSeatsSorted = useMemo(() => {
+    const set = new Set(selectedSeatIds);
+    return seats.filter((s) => set.has(s.id)).sort((a, b) => a.row - b.row || a.number - b.number);
+  }, [seats, selectedSeatIds]);
 
   useEffect(() => {
     let cancelled = false;
@@ -187,7 +193,7 @@ export function BookingClient() {
         if (cancelled) return;
         setSessions(data);
         setSelectedSessionId(null);
-        setSelectedSeatId(null);
+        setSelectedSeatIds([]);
         setSeats([]);
       } catch (e) {
         if (!cancelled) {
@@ -228,7 +234,7 @@ export function BookingClient() {
     }
     prevMovieIdRef.current = selectedMovieId;
     setSelectedSessionId(null);
-    setSelectedSeatId(null);
+    setSelectedSeatIds([]);
     setSeats([]);
     setSeatsError(null);
   }, [selectedMovieId]);
@@ -248,7 +254,7 @@ export function BookingClient() {
         const data = await cinemaApi.getSessionSeats(selectedSessionId);
         if (cancelled) return;
         setSeats(data);
-        setSelectedSeatId(null);
+        setSelectedSeatIds([]);
       } catch (e) {
         if (!cancelled) {
           setSeats([]);
@@ -271,29 +277,40 @@ export function BookingClient() {
 
   const seatsPerRow = selectedHall?.seatsPerRow ?? 10;
 
-  const toggleSeat = useCallback(
-    (seat: SessionSeatWithAvailability) => {
-      if (seat.status === 'BOOKED') return;
+  const toggleSeat = useCallback((seat: SessionSeatWithAvailability) => {
+    if (seat.status === 'BOOKED') return;
+    setBannerSuccess(null);
+    const prev = selectedSeatIdsRef.current;
+    const idx = prev.indexOf(seat.id);
+    if (idx >= 0) {
       setBannerError(null);
-      setBannerSuccess(null);
-      setSelectedSeatId((prev) => (prev === seat.id ? null : seat.id));
-    },
-    [],
-  );
+      setSelectedSeatIds(prev.filter((id) => id !== seat.id));
+      return;
+    }
+    if (prev.length >= MAX_SELECTABLE_SEATS) {
+      setBannerError(`You can select up to ${MAX_SELECTABLE_SEATS} seats.`);
+      return;
+    }
+    setBannerError(null);
+    setSelectedSeatIds([...prev, seat.id]);
+  }, []);
 
   const handleCheckout = useCallback(async () => {
-    if (!selectedSessionId || !selectedSeatId) return;
+    if (!selectedSessionId || selectedSeatIds.length === 0) return;
     setCheckoutLoading(true);
     setBannerError(null);
     setBannerSuccess(null);
+    const toBook = [...selectedSeatIds];
     try {
-      const created = await cinemaApi.createReservation({
+      await cinemaApi.createReservationsBatch({
         sessionId: selectedSessionId,
-        seatId: selectedSeatId,
+        seatIds: toBook,
       });
-      await cinemaApi.confirmReservation(created.id);
-      setBannerSuccess('Booking confirmed. Enjoy the show.');
-      setSelectedSeatId(null);
+      const n = toBook.length;
+      setBannerSuccess(
+        n === 1 ? 'Booking confirmed. Enjoy the show.' : `Booking confirmed for ${n} seats. Enjoy the show.`,
+      );
+      setSelectedSeatIds([]);
       const nextSeats = await cinemaApi.getSessionSeats(selectedSessionId);
       setSeats(nextSeats);
     } catch (e) {
@@ -306,18 +323,28 @@ export function BookingClient() {
       } else {
         setBannerError('Something went wrong. Please try again.');
       }
+      if (selectedSessionId) {
+        try {
+          const nextSeats = await cinemaApi.getSessionSeats(selectedSessionId);
+          setSeats(nextSeats);
+        } catch {
+          /* ignore refresh failure */
+        }
+      }
     } finally {
       setCheckoutLoading(false);
     }
-  }, [selectedSessionId, selectedSeatId]);
+  }, [selectedSessionId, selectedSeatIds]);
 
   const summarySeatLabel =
-    selectedSeat && selectedSession
-      ? `${rowLetter(selectedSeat.row)}${selectedSeat.number}`
-      : '—';
+    selectedSeatsSorted.length === 0
+      ? '—'
+      : selectedSeatsSorted.map((s) => `${rowLetter(s.row)}${s.number}`).join(', ');
 
   const summaryPrice =
-    selectedSession && selectedSeat ? formatPriceDisplay(selectedSession.price) : '—';
+    selectedSession && selectedSeatsSorted.length > 0
+      ? formatPriceDisplay(Number(selectedSession.price) * selectedSeatsSorted.length)
+      : '—';
 
   return (
     <div className={styles.page}>
@@ -495,11 +522,15 @@ export function BookingClient() {
                         <div
                           key={row}
                           className={styles.seatRow}
-                          style={{ ['--seat-cols' as string]: seatsPerRow }}
                           role="group"
                           aria-label={`Row ${rowLetter(row)}`}
                         >
-                          {buildRowCells(rowSeats, seatsPerRow).map((cell, idx) => {
+                          <span className={styles.rowLabel}>{rowLetter(row)}</span>
+                          <div
+                            className={styles.seatRowSeats}
+                            style={{ ['--seat-cols' as string]: seatsPerRow }}
+                          >
+                            {buildRowCells(rowSeats, seatsPerRow).map((cell, idx) => {
                             if (!cell) {
                               return (
                                 <span
@@ -510,7 +541,7 @@ export function BookingClient() {
                               );
                             }
                             const booked = cell.status === 'BOOKED';
-                            const selected = cell.id === selectedSeatId;
+                            const selected = selectedSeatIds.includes(cell.id);
                             return (
                               <button
                                 key={cell.id}
@@ -526,13 +557,20 @@ export function BookingClient() {
                                 aria-pressed={booked ? undefined : selected}
                                 aria-label={seatDescription(cell.row, cell.number, cell.status)}
                                 onClick={() => toggleSeat(cell)}
-                              />
+                              >
+                                <span className={styles.seatNumber}>{cell.number}</span>
+                              </button>
                             );
                           })}
+                          </div>
                         </div>
                       ))}
                     </div>
 
+                    <p className={styles.seatMapHint}>
+                      Tap up to {MAX_SELECTABLE_SEATS} seats. Row letters (A, B, …) and numbers are seat
+                      positions.
+                    </p>
                     <div className={styles.legend}>
                       <div className={styles.legendItem}>
                         <span
@@ -566,7 +604,9 @@ export function BookingClient() {
               <div className={styles.summary}>
                 <div className={styles.summaryStats}>
                   <div className={styles.summaryBlock}>
-                    <p className={styles.summaryLabel}>Seat</p>
+                    <p className={styles.summaryLabel}>
+                      {selectedSeatsSorted.length > 1 ? 'Seats' : 'Seat'}
+                    </p>
                     <p className={styles.summaryValue} aria-live="polite">
                       {summarySeatLabel}
                     </p>
@@ -581,7 +621,7 @@ export function BookingClient() {
                 <button
                   type="button"
                   className={styles.checkoutBtn}
-                  disabled={!selectedSessionId || !selectedSeatId || checkoutLoading}
+                  disabled={!selectedSessionId || selectedSeatIds.length === 0 || checkoutLoading}
                   onClick={handleCheckout}
                 >
                   {checkoutLoading ? 'Processing…' : 'Checkout now'}

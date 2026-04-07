@@ -2,8 +2,7 @@
 
 import styles from './session-auth-gate.module.scss';
 import { useAuthStore } from '@/lib/auth-store';
-import { ApiError, fetchJson } from '@/lib/cinema-api';
-import type { UserPublic } from '@/lib/cinema-types';
+import { ApiError, fetchAuthMe } from '@/lib/cinema-api';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -49,7 +48,7 @@ export function SessionAuthGate({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        await fetchJson<UserPublic>('/auth/me', { cache: 'no-store' });
+        await fetchAuthMe();
         if (!cancelled) {
           setState('ok');
         }

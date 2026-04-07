@@ -1,5 +1,5 @@
 import { useAuthStore } from './auth-store';
-import { getApiBaseUrl } from './cinema-api';
+import { getApiBaseUrl, invalidateApiReadCaches } from './cinema-api';
 
 /** Clears local auth; best-effort server logout (stateless API). */
 export async function performLogout(): Promise<void> {
@@ -8,5 +8,6 @@ export async function performLogout(): Promise<void> {
   } catch {
     // ignore network errors
   }
+  invalidateApiReadCaches();
   useAuthStore.getState().clearAuth();
 }

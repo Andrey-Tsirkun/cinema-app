@@ -3,6 +3,7 @@ import type {
   ReservationPublic,
   SessionPublic,
   SessionSeatWithAvailability,
+  UserPublic,
 } from './cinema-types';
 import { useAuthStore } from './auth-store';
 
@@ -84,18 +85,112 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
   return res.json() as Promise<T>;
 }
 
+// --- GET dedupe / short cache (avoids duplicate network from Strict Mode or parallel mounts) ---
+
+let hallsCache: HallPublic[] | null = null;
+let hallsInflight: Promise<HallPublic[]> | null = null;
+
+const sessionsInflight = new Map<string, Promise<SessionPublic[]>>();
+const seatsInflight = new Map<string, Promise<SessionSeatWithAvailability[]>>();
+
+const AUTH_ME_TTL_MS = 8000;
+let authMeMemo: { token: string; user: UserPublic; at: number } | null = null;
+const authMeInflight = new Map<string, Promise<UserPublic>>();
+
+export function invalidateHallsCache(): void {
+  hallsCache = null;
+  hallsInflight = null;
+}
+
+/** Clear cached reads (call on logout). */
+export function invalidateApiReadCaches(): void {
+  hallsCache = null;
+  hallsInflight = null;
+  sessionsInflight.clear();
+  seatsInflight.clear();
+  authMeMemo = null;
+  authMeInflight.clear();
+}
+
+async function getHallsDeduped(): Promise<HallPublic[]> {
+  if (hallsCache) return hallsCache;
+  if (hallsInflight) return hallsInflight;
+  hallsInflight = fetchJson<HallPublic[]>('/halls')
+    .then((d) => {
+      hallsCache = d;
+      hallsInflight = null;
+      return d;
+    })
+    .catch((e) => {
+      hallsInflight = null;
+      throw e;
+    });
+  return hallsInflight;
+}
+
+function sessionsCacheKey(params: { date: string; hallId: string }): string {
+  return `${params.date}\u0000${params.hallId}`;
+}
+
+async function getSessionsDeduped(params: { date: string; hallId: string }): Promise<SessionPublic[]> {
+  const key = sessionsCacheKey(params);
+  const existing = sessionsInflight.get(key);
+  if (existing) return existing;
+  const q = new URLSearchParams({ date: params.date, hallId: params.hallId });
+  const p = fetchJson<SessionPublic[]>(`/sessions?${q.toString()}`).finally(() =>
+    sessionsInflight.delete(key),
+  );
+  sessionsInflight.set(key, p);
+  return p;
+}
+
+async function getSessionSeatsDeduped(sessionId: string): Promise<SessionSeatWithAvailability[]> {
+  const existing = seatsInflight.get(sessionId);
+  if (existing) return existing;
+  const p = fetchJson<SessionSeatWithAvailability[]>(`/sessions/${sessionId}/seats`).finally(() =>
+    seatsInflight.delete(sessionId),
+  );
+  seatsInflight.set(sessionId, p);
+  return p;
+}
+
+/** Validates JWT; dedupes parallel calls and memoizes briefly per token. */
+export async function fetchAuthMe(): Promise<UserPublic> {
+  const token = useAuthStore.getState().accessToken ?? '';
+  if (!token) {
+    throw new ApiError(401, 'Unauthorized');
+  }
+  const now = Date.now();
+  if (authMeMemo?.token === token && now - authMeMemo.at < AUTH_ME_TTL_MS) {
+    return authMeMemo.user;
+  }
+  const inflight = authMeInflight.get(token);
+  if (inflight) return inflight;
+  const p = fetchJson<UserPublic>('/auth/me', { cache: 'no-store' })
+    .then((user) => {
+      authMeMemo = { token, user, at: Date.now() };
+      authMeInflight.delete(token);
+      return user;
+    })
+    .catch((e) => {
+      authMeInflight.delete(token);
+      throw e;
+    });
+  authMeInflight.set(token, p);
+  return p;
+}
+
 export const cinemaApi = {
   getHalls(): Promise<HallPublic[]> {
-    return fetchJson<HallPublic[]>('/halls');
+    return getHallsDeduped();
   },
 
   getSessions(params: { date: string; hallId: string }): Promise<SessionPublic[]> {
-    const q = new URLSearchParams({ date: params.date, hallId: params.hallId });
-    return fetchJson<SessionPublic[]>(`/sessions?${q.toString()}`);
+    return getSessionsDeduped(params);
   },
 
   getSessionSeats(sessionId: string): Promise<SessionSeatWithAvailability[]> {
-    return fetchJson<SessionSeatWithAvailability[]>(`/sessions/${sessionId}/seats`);
+    return getSessionSeatsDeduped(sessionId);
   },
 
   createReservation(body: { sessionId: string; seatId: string }): Promise<ReservationPublic> {
@@ -108,6 +203,16 @@ export const cinemaApi = {
   confirmReservation(reservationId: string): Promise<ReservationPublic> {
     return fetchJson<ReservationPublic>(`/reservations/${reservationId}/confirm`, {
       method: 'POST',
+    });
+  },
+
+  createReservationsBatch(body: {
+    sessionId: string;
+    seatIds: string[];
+  }): Promise<ReservationPublic[]> {
+    return fetchJson<ReservationPublic[]>('/reservations/batch', {
+      method: 'POST',
+      body: JSON.stringify(body),
     });
   },
 };
