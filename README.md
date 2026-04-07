@@ -2,6 +2,16 @@
 
 Monorepo for a **cinema seat booking** web app: session listings, hall selection, seat picking, and reservations.
 
+## Screenshots
+
+**Booking** — movie, hall, date and time, interactive seat map, checkout.
+
+![Booking experience: hall selection, date strip, seat grid, and checkout](docs/screenshots/screen-1.png)
+
+**Sign in** — email/password form and testing-mode shortcuts for seeded dev users.
+
+![Login page with testing mode user shortcuts](docs/screenshots/screen-2.png)
+
 ## How it works
 
 | Layer | Stack |
