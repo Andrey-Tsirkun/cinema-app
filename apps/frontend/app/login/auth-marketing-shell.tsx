@@ -1,3 +1,5 @@
+import { SiteFooter } from '@/components/SiteFooter';
+import { NAV_PLACEHOLDER } from '@/lib/nav-placeholders';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import styles from './page.module.scss';
@@ -22,17 +24,17 @@ export function AuthMarketingShell({ cardTitle, cardLead, children }: AuthMarket
           </Link>
           <ul className={styles.navLinks}>
             <li>
-              <Link className={styles.navLink} href="/">
+              <Link className={styles.navLink} href={NAV_PLACEHOLDER.movies}>
                 Movies
               </Link>
             </li>
             <li>
-              <Link className={styles.navLink} href="/">
+              <Link className={styles.navLink} href={NAV_PLACEHOLDER.cinemas}>
                 Cinemas
               </Link>
             </li>
             <li>
-              <Link className={styles.navLink} href="/">
+              <Link className={styles.navLink} href={NAV_PLACEHOLDER.offers}>
                 Offers
               </Link>
             </li>
@@ -60,11 +62,11 @@ export function AuthMarketingShell({ cardTitle, cardLead, children }: AuthMarket
             <div className={styles.legal}>
               <p className={styles.legalText}>
                 By continuing, you agree to our{' '}
-                <Link className={styles.inlineLink} href="/">
+                <Link className={styles.inlineLink} href={NAV_PLACEHOLDER.terms}>
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link className={styles.inlineLink} href="/">
+                <Link className={styles.inlineLink} href={NAV_PLACEHOLDER.privacy}>
                   Privacy Policy
                 </Link>
                 .
@@ -74,34 +76,7 @@ export function AuthMarketingShell({ cardTitle, cardLead, children }: AuthMarket
         </div>
       </main>
 
-      <footer className={styles.footer}>
-        <div className={styles.footerInner}>
-          <div className={styles.footerBrand}>The Cinematic Pulse</div>
-          <ul className={styles.footerLinks}>
-            <li>
-              <Link className={styles.footerLink} href="/">
-                Terms of Service
-              </Link>
-            </li>
-            <li>
-              <Link className={styles.footerLink} href="/">
-                Privacy Policy
-              </Link>
-            </li>
-            <li>
-              <Link className={styles.footerLink} href="/">
-                Contact Support
-              </Link>
-            </li>
-            <li>
-              <Link className={styles.footerLink} href="/">
-                Careers
-              </Link>
-            </li>
-          </ul>
-          <p className={styles.copyright}>© {new Date().getFullYear()} The Cinematic Pulse. All rights reserved.</p>
-        </div>
-      </footer>
+      <SiteFooter />
 
       <div className={styles.accentBar} aria-hidden="true" />
     </div>

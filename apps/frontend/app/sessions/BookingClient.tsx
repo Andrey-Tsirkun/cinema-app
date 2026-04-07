@@ -1,8 +1,10 @@
 'use client';
 
+import { SiteFooter } from '@/components/SiteFooter';
+import { SiteHeader } from '@/components/SiteHeader';
+import { ApiError, cinemaApi } from '@/lib/cinema-api';
 import Link from 'next/link';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { ApiError, cinemaApi } from '@/lib/cinema-api';
 import type {
   HallPublic,
   SessionPublic,
@@ -323,35 +325,7 @@ export function BookingClient() {
         Skip to booking content
       </a>
 
-      <header className={styles.nav}>
-        <div className={styles.navInner}>
-          <Link className={styles.brand} href="/">
-            The Cinematic Pulse
-          </Link>
-          <ul className={styles.navLinks}>
-            <li>
-              <Link className={styles.navLink} href="/">
-                Movies
-              </Link>
-            </li>
-            <li>
-              <Link className={`${styles.navLink} ${styles.navLinkActive}`} href="/sessions" aria-current="page">
-                Cinemas
-              </Link>
-            </li>
-            <li>
-              <Link className={styles.navLink} href="/">
-                Offers
-              </Link>
-            </li>
-          </ul>
-          <div className={styles.navActions}>
-            <Link className={styles.loginBtn} href="/login">
-              Login
-            </Link>
-          </div>
-        </div>
-      </header>
+      <SiteHeader activeNav="cinemas" />
 
       <main id="booking-main" className={styles.main} tabIndex={-1}>
         <p className={styles.statusRegion} role="status" aria-live="polite" aria-atomic="true">
@@ -652,39 +626,7 @@ export function BookingClient() {
         </div>
       </section>
 
-      <footer className={styles.footer}>
-        <div className={styles.footerInner}>
-          <div>
-            <div className={styles.footerBrand}>The Cinematic Pulse</div>
-            <p className={styles.footerTagline}>
-              Elevating the art of cinema through immersive technology and premier service.
-            </p>
-          </div>
-          <ul className={styles.footerLinks}>
-            <li>
-              <Link className={styles.footerLink} href="/">
-                Terms of Service
-              </Link>
-            </li>
-            <li>
-              <Link className={styles.footerLink} href="/">
-                Privacy Policy
-              </Link>
-            </li>
-            <li>
-              <Link className={styles.footerLink} href="/">
-                Contact Support
-              </Link>
-            </li>
-            <li>
-              <Link className={styles.footerLink} href="/">
-                Careers
-              </Link>
-            </li>
-          </ul>
-          <p className={styles.footerCopy}>© {new Date().getFullYear()} The Cinematic Pulse. All rights reserved.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

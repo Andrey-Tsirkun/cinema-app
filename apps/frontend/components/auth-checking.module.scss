@@ -1,0 +1,16 @@
+@use '@/styles/variables' as *;
+
+.wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: $surface;
+  color: $on-surface-variant;
+  font-family: system-ui, sans-serif;
+}
+
+.message {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}

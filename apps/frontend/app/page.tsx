@@ -1,9 +1,5 @@
-import styles from './page.module.scss';
+import { HomePage } from './HomePage';
 
 export default function Home() {
-  return (
-    <main className={styles.main}>
-      <p className={styles.label}>cinema-app frontend</p>
-    </main>
-  );
+  return <HomePage />;
 }

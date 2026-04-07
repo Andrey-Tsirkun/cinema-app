@@ -1,0 +1,65 @@
+@use '@/styles/variables' as *;
+@use '@/styles/mixins' as *;
+
+.footer {
+  margin-top: auto;
+  width: 100%;
+  background: $surface;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footerInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  max-width: 96rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+
+  @include md-up {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 3rem;
+  }
+}
+
+.footerBrand {
+  font-family: var(--font-app-display, system-ui), system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: $on-surface;
+  letter-spacing: -0.03em;
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.footerLink {
+  color: rgba($on-surface, 0.6);
+  font-size: 0.875rem;
+  text-decoration: none;
+
+  &:hover {
+    color: $white;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+    border-radius: 0.25rem;
+  }
+}
+
+.copyright {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba($on-surface, 0.4);
+  letter-spacing: -0.02em;
+}

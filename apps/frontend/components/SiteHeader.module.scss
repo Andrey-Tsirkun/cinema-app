@@ -1,0 +1,136 @@
+@use '@/styles/variables' as *;
+@use '@/styles/mixins' as *;
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(15, 13, 22, 0.88);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(166, 140, 255, 0.08);
+}
+
+.navInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 96rem;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+
+  @include md-up {
+    padding: 1.125rem 2.5rem;
+  }
+}
+
+.brand {
+  font-family: var(--font-app-display, system-ui), system-ui, sans-serif;
+  font-size: 1.125rem;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+  background: linear-gradient(90deg, $primary, $primary-container);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: $primary;
+  flex-shrink: 0;
+
+  &:focus-visible {
+    @include focus-ring;
+    border-radius: 0.25rem;
+  }
+}
+
+.navLinks {
+  display: none;
+  gap: 1.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  @include md-up {
+    display: flex;
+  }
+}
+
+.navLink {
+  color: $on-surface;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  opacity: 0.82;
+
+  &:hover {
+    color: $primary;
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+    border-radius: 0.25rem;
+  }
+}
+
+.navLinkActive {
+  color: $primary;
+  opacity: 1;
+}
+
+.navActions {
+  flex-shrink: 0;
+}
+
+%actionPress {
+  transition: transform 0.15s ease, opacity 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.loginBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-decoration: none;
+  color: $white;
+  background: linear-gradient(135deg, $primary, $primary-container);
+  border: none;
+  cursor: pointer;
+  @extend %actionPress;
+}
+
+.logoutBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: $on-surface-variant;
+  background: transparent;
+  border: 1px solid rgba($outline-variant, 0.45);
+  cursor: pointer;
+  @extend %actionPress;
+
+  &:hover {
+    color: $on-surface;
+    border-color: rgba($primary, 0.5);
+  }
+}
