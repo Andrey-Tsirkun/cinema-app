@@ -9,7 +9,10 @@ COPY apps/backend/package.json ./apps/backend/
 COPY apps/frontend/package.json ./apps/frontend/
 COPY packages/config/package.json ./packages/config/
 
-RUN npm ci
+RUN npm config set fetch-retries 5 \
+  && npm config set fetch-retry-mintimeout 20000 \
+  && npm config set fetch-retry-maxtimeout 120000 \
+  && npm ci
 
 COPY apps/backend ./apps/backend
 COPY packages/config ./packages/config

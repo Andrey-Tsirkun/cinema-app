@@ -2,6 +2,7 @@
 
 import styles from './auth-checking.module.scss';
 import { useAuthStore } from '@/lib/auth-store';
+import { ensureAccessFromRefresh } from '@/lib/cinema-api';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState, type ReactNode } from 'react';
 
@@ -31,25 +32,21 @@ function AuthBoundaryInner({ children }: { children: ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const accessToken = useAuthStore((s) => s.accessToken);
-  const [storageReady, setStorageReady] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
 
   useEffect(() => {
-    const p = useAuthStore.persist;
-    if (!p) {
-      setStorageReady(true);
-      return;
-    }
-    if (p.hasHydrated()) {
-      setStorageReady(true);
-      return;
-    }
-    return p.onFinishHydration(() => {
-      setStorageReady(true);
-    });
+    let cancelled = false;
+    (async () => {
+      await ensureAccessFromRefresh();
+      if (!cancelled) setSessionReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    if (!storageReady) return;
+    if (!sessionReady) return;
 
     if (isPublicAuthPath(pathname) && accessToken) {
       const raw = searchParams.get('returnUrl');
@@ -62,9 +59,9 @@ function AuthBoundaryInner({ children }: { children: ReactNode }) {
     if (isProtectedPath(pathname) && !accessToken) {
       router.replace(`/login?returnUrl=${encodeURIComponent(pathname || '/')}`);
     }
-  }, [storageReady, pathname, accessToken, router, searchParams]);
+  }, [sessionReady, pathname, accessToken, router, searchParams]);
 
-  if (!storageReady) {
+  if (!sessionReady) {
     if (isPublicAuthPath(pathname)) {
       return <>{children}</>;
     }

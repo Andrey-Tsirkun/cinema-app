@@ -7,7 +7,11 @@ COPY apps/backend/package.json ./apps/backend/
 COPY apps/frontend/package.json ./apps/frontend/
 COPY packages/config/package.json ./packages/config/
 
-RUN npm ci
+# Reduce flaky ECONNRESET during registry downloads (especially on slow/unstable links).
+RUN npm config set fetch-retries 5 \
+  && npm config set fetch-retry-mintimeout 20000 \
+  && npm config set fetch-retry-maxtimeout 120000 \
+  && npm ci
 
 COPY apps/frontend ./apps/frontend
 COPY packages/config ./packages/config

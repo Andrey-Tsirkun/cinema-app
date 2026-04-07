@@ -4,6 +4,7 @@ import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
@@ -21,6 +22,7 @@ async function bootstrap() {
     app.set('trust proxy', 1);
   }
 
+  app.use(cookieParser());
   app.useBodyParser('json', { limit: '100kb' });
   app.useBodyParser('urlencoded', { extended: true, limit: '100kb' });
 

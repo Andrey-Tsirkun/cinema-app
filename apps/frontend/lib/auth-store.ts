@@ -1,5 +1,15 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+
+/** Legacy zustand `persist` key — must never hold tokens again; clear on client load. */
+const LEGACY_AUTH_STORAGE_KEY = 'cinema-auth';
+
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY);
+  } catch {
+    // ignore quota / private mode
+  }
+}
 
 type AuthState = {
   accessToken: string | null;
@@ -7,16 +17,9 @@ type AuthState = {
   clearAuth: () => void;
 };
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      accessToken: null,
-      setAccessToken: (accessToken) => set({ accessToken }),
-      clearAuth: () => set({ accessToken: null }),
-    }),
-    {
-      name: 'cinema-auth',
-      partialize: (state) => ({ accessToken: state.accessToken }),
-    },
-  ),
-);
+/** Access token lives in memory only (not localStorage) — survives until tab close or refresh via httpOnly cookie. */
+export const useAuthStore = create<AuthState>()((set) => ({
+  accessToken: null,
+  setAccessToken: (accessToken) => set({ accessToken }),
+  clearAuth: () => set({ accessToken: null }),
+}));

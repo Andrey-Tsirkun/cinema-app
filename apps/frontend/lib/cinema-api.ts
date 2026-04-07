@@ -54,7 +54,63 @@ function mergeAuthHeaders(headers: Headers): void {
   }
 }
 
+function pathWithoutQuery(path: string): string {
+  const i = path.indexOf('?');
+  return i === -1 ? path : path.slice(0, i);
+}
+
+const AUTH_ME_TTL_MS = 8000;
+let authMeMemo: { token: string; user: UserPublic; at: number } | null = null;
+const authMeInflight = new Map<string, Promise<UserPublic>>();
+
+function invalidateAuthMeCache(): void {
+  authMeMemo = null;
+  authMeInflight.clear();
+}
+
+let sessionRestoreInflight: Promise<void> | null = null;
+
+/**
+ * If there is no access token, tries POST /auth/refresh (httpOnly cookie).
+ * Deduplicates parallel callers (AuthBoundary + SessionAuthGate).
+ */
+export function ensureAccessFromRefresh(): Promise<void> {
+  if (useAuthStore.getState().accessToken) {
+    return Promise.resolve();
+  }
+  if (!sessionRestoreInflight) {
+    sessionRestoreInflight = tryRefreshAccessToken()
+      .then(() => undefined)
+      .finally(() => {
+        sessionRestoreInflight = null;
+      });
+  }
+  return sessionRestoreInflight;
+}
+
+/** Uses cookie credentials; does not recurse through fetchJson 401 handling. */
+export async function tryRefreshAccessToken(): Promise<boolean> {
+  try {
+    const res = await fetch(buildUrl('/auth/refresh'), {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!res.ok) return false;
+    const data = (await res.json()) as { accessToken: string };
+    if (!data.accessToken) return false;
+    useAuthStore.getState().setAccessToken(data.accessToken);
+    invalidateAuthMeCache();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  return fetchJsonOnce<T>(path, init, true);
+}
+
+async function fetchJsonOnce<T>(path: string, init?: RequestInit, allowRefreshRetry = true): Promise<T> {
   const headers = new Headers(init?.headers);
   const method = (init?.method ?? 'GET').toUpperCase();
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && init?.body != null) {
@@ -67,9 +123,23 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
   const res = await fetch(buildUrl(path), {
     ...init,
     headers,
+    credentials: 'include',
   });
 
   if (!res.ok) {
+    const pathOnly = pathWithoutQuery(path);
+    if (
+      res.status === 401 &&
+      allowRefreshRetry &&
+      pathOnly !== '/auth/refresh' &&
+      pathOnly !== '/auth/login' &&
+      pathOnly !== '/auth/register'
+    ) {
+      const refreshed = await tryRefreshAccessToken();
+      if (refreshed) {
+        return fetchJsonOnce<T>(path, init, false);
+      }
+    }
     const body = await parseErrorBody(res);
     throw new ApiError(
       res.status,
@@ -93,10 +163,6 @@ let hallsInflight: Promise<HallPublic[]> | null = null;
 const sessionsInflight = new Map<string, Promise<SessionPublic[]>>();
 const seatsInflight = new Map<string, Promise<SessionSeatWithAvailability[]>>();
 
-const AUTH_ME_TTL_MS = 8000;
-let authMeMemo: { token: string; user: UserPublic; at: number } | null = null;
-const authMeInflight = new Map<string, Promise<UserPublic>>();
-
 export function invalidateHallsCache(): void {
   hallsCache = null;
   hallsInflight = null;
@@ -108,8 +174,7 @@ export function invalidateApiReadCaches(): void {
   hallsInflight = null;
   sessionsInflight.clear();
   seatsInflight.clear();
-  authMeMemo = null;
-  authMeInflight.clear();
+  invalidateAuthMeCache();
 }
 
 async function getHallsDeduped(): Promise<HallPublic[]> {

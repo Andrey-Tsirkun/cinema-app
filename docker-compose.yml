@@ -38,7 +38,8 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://cinema:cinema@postgres:5432/cinema?schema=public}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
       PORT: 4000
     depends_on:
