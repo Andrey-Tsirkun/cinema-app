@@ -1,12 +1,18 @@
 /**
  * Dev seed: movies, two halls with seat grids, sessions across the next week (UTC days).
  * Idempotent: skips if halls already exist unless SEED_FORCE=true.
+ * Always ensures a dev login: test@test.test (password logged on first run / upsert).
  */
 import 'dotenv/config';
 
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import { Pool } from 'pg';
+
+/** Fixed dev credentials for local/testing (JWT login). */
+const DEV_SEED_USER_EMAIL = 'test@test.test';
+const DEV_SEED_USER_PASSWORD = 'testtest12';
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -26,7 +32,34 @@ function startOfUtcDay(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
 }
 
+async function ensureDevLoginUser(client: PrismaClient): Promise<void> {
+  const passwordHash = await bcrypt.hash(DEV_SEED_USER_PASSWORD, 10);
+  const before = await client.user.findUnique({
+    where: { email: DEV_SEED_USER_EMAIL },
+    select: { id: true },
+  });
+  await client.user.upsert({
+    where: { email: DEV_SEED_USER_EMAIL },
+    create: {
+      email: DEV_SEED_USER_EMAIL,
+      password: passwordHash,
+    },
+    update: {
+      password: passwordHash,
+    },
+  });
+  if (before) {
+    console.log(`[seed] Dev user updated: ${DEV_SEED_USER_EMAIL}`);
+  } else {
+    console.log(
+      `[seed] Dev user created: ${DEV_SEED_USER_EMAIL} (password: ${DEV_SEED_USER_PASSWORD})`,
+    );
+  }
+}
+
 async function main(): Promise<void> {
+  await ensureDevLoginUser(prisma);
+
   const force = process.env.SEED_FORCE === 'true';
   if (!force) {
     const hallCount = await prisma.hall.count();

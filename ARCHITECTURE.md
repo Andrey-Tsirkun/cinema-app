@@ -311,7 +311,7 @@ When loading the seat map, the backend should return:
 | ---------- | ----- |
 | `frontend` | 3000  |
 | `backend`  | 4000  |
-| `postgres` | 5432  |
+| `postgres` | 5433 (host → 5432 in container) |
 
 Orchestrate with **Docker Compose** (shared network, volumes for Postgres data).
 
