@@ -10,6 +10,17 @@ import styles from './page.module.scss';
 
 const DEFAULT_RETURN = '/sessions';
 
+/** Seeded dev users — must match `apps/backend/prisma/seed.ts` (DEV_SEED_USERS). */
+const SEEDED_TEST_USERS = [
+  { id: '1' as const, label: 'User 1', email: 'test@test.test', password: 'testtest12' },
+  {
+    id: '2' as const,
+    label: 'User 2',
+    email: 'new-test@new-test.test',
+    password: 'newtest12',
+  },
+] as const;
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -87,6 +98,26 @@ export function LoginForm() {
       <button type="submit" className={styles.submitButton} disabled={pending}>
         {pending ? 'Signing in…' : 'Sign in'}
       </button>
+
+      <div className={styles.testModeBlock} aria-label="Testing mode shortcuts">
+        <p className={styles.testModeCaption}>Testing mode</p>
+        <div className={styles.testUserRow}>
+          {SEEDED_TEST_USERS.map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              className={styles.testUserButton}
+              onClick={() => {
+                setEmail(u.email);
+                setPassword(u.password);
+                setError(null);
+              }}
+            >
+              {u.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <p className={styles.switchAuth}>
         No account?{' '}

@@ -272,6 +272,54 @@
   }
 }
 
+.testModeBlock {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed rgba($outline-variant, 0.35);
+}
+
+.testModeCaption {
+  margin: 0 0 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba($on-surface-variant, 0.75);
+}
+
+.testUserRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.testUserButton {
+  flex: 1;
+  min-width: 6.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba($outline-variant, 0.45);
+  background: rgba($surface, 0.35);
+  color: $on-surface-variant;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
+
+  &:hover {
+    border-color: rgba($primary, 0.55);
+    color: $on-surface;
+    background: rgba($primary, 0.08);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
 .switchAuth {
   margin: 1.25rem 0 0;
   text-align: center;

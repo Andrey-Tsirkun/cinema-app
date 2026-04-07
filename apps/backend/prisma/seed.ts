@@ -1,7 +1,7 @@
 /**
  * Dev seed: movies, two halls with seat grids, sessions across the next week (UTC days).
  * Idempotent: skips if halls already exist unless SEED_FORCE=true.
- * Always ensures a dev login: test@test.test (password logged on first run / upsert).
+ * Always ensures dev logins: test@test.test and new-test@new-test.test (passwords logged on first create / upsert).
  */
 import 'dotenv/config';
 
@@ -11,8 +11,10 @@ import * as bcrypt from 'bcrypt';
 import { Pool } from 'pg';
 
 /** Fixed dev credentials for local/testing (JWT login). */
-const DEV_SEED_USER_EMAIL = 'test@test.test';
-const DEV_SEED_USER_PASSWORD = 'testtest12';
+const DEV_SEED_USERS: ReadonlyArray<{ email: string; password: string }> = [
+  { email: 'test@test.test', password: 'testtest12' },
+  { email: 'new-test@new-test.test', password: 'newtest12' },
+];
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -32,16 +34,20 @@ function startOfUtcDay(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
 }
 
-async function ensureDevLoginUser(client: PrismaClient): Promise<void> {
-  const passwordHash = await bcrypt.hash(DEV_SEED_USER_PASSWORD, 10);
+async function ensureDevLoginUser(
+  client: PrismaClient,
+  email: string,
+  password: string,
+): Promise<void> {
+  const passwordHash = await bcrypt.hash(password, 10);
   const before = await client.user.findUnique({
-    where: { email: DEV_SEED_USER_EMAIL },
+    where: { email },
     select: { id: true },
   });
   await client.user.upsert({
-    where: { email: DEV_SEED_USER_EMAIL },
+    where: { email },
     create: {
-      email: DEV_SEED_USER_EMAIL,
+      email,
       password: passwordHash,
     },
     update: {
@@ -49,16 +55,16 @@ async function ensureDevLoginUser(client: PrismaClient): Promise<void> {
     },
   });
   if (before) {
-    console.log(`[seed] Dev user updated: ${DEV_SEED_USER_EMAIL}`);
+    console.log(`[seed] Dev user updated: ${email}`);
   } else {
-    console.log(
-      `[seed] Dev user created: ${DEV_SEED_USER_EMAIL} (password: ${DEV_SEED_USER_PASSWORD})`,
-    );
+    console.log(`[seed] Dev user created: ${email} (password: ${password})`);
   }
 }
 
 async function main(): Promise<void> {
-  await ensureDevLoginUser(prisma);
+  for (const u of DEV_SEED_USERS) {
+    await ensureDevLoginUser(prisma, u.email, u.password);
+  }
 
   const force = process.env.SEED_FORCE === 'true';
   if (!force) {
