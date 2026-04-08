@@ -10,6 +10,7 @@
     "dev": "npm run dev:kill-ports && concurrently -n fe,be -c blue,green \"npm run dev -w frontend\" \"npm run dev -w backend\"",
     "dev:all": "docker compose up postgres -d --wait && npm run dev:all:db && npm run dev:all:app",
     "docker:stack": "docker compose up --build -d --wait",
+    "docker:stack:prod": "docker compose -f docker-compose.prod.yml up --build -d --wait",
     "docker:stack:fresh": "docker compose down -v && docker compose up --build -d --wait",
     "dev:all:db": "env-cmd -f apps/backend/docker.local.env npm run db:prepare -w backend && env-cmd -f apps/backend/docker.local.env npm run db:seed -w backend",
     "dev:all:app": "npm run dev:kill-ports && env-cmd -f apps/backend/docker.local.env npm run dev",
